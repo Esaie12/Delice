@@ -87,11 +87,20 @@ model User {
   loyaltyCard      LoyaltyCard?
   notifications    Notification[]
   deliveryAgent    DeliveryAgent?
+  admin           Admin?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   @@index([role])
   @@index([city])
+}
+
+model Admin {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Establishment {

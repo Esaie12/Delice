@@ -25,6 +25,11 @@ export class RegisterDto {
   @IsString()
   city?: string;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
   @ApiProperty({ enum: Role, required: false })
   @IsOptional()
   @IsEnum(Role)

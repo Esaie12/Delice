@@ -4,7 +4,12 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { RegisterByRoleDto } from './dto/register-by-role.dto';
+import {
+  RegisterAdminDto,
+  RegisterClientDto,
+  RegisterDeliveryAgentDto,
+  RegisterEstablishmentDto,
+} from './dto/register-by-role.dto';
 import { RegisterDto } from './dto/register.dto';
 
 @ApiTags('Auth')
@@ -22,28 +27,28 @@ export class AuthController {
   @Post('register/client')
   @ApiOperation({ summary: 'Inscription client (route dédiée)' })
   @ApiResponse({ status: 201 })
-  registerClient(@Body() dto: RegisterByRoleDto) {
+  registerClient(@Body() dto: RegisterClientDto) {
     return this.authService.registerClient(dto);
   }
 
   @Post('register/establishment')
   @ApiOperation({ summary: 'Inscription établissement (route dédiée)' })
   @ApiResponse({ status: 201 })
-  registerEstablishment(@Body() dto: RegisterByRoleDto) {
+  registerEstablishment(@Body() dto: RegisterEstablishmentDto) {
     return this.authService.registerEstablishment(dto);
   }
 
   @Post('register/delivery-agent')
   @ApiOperation({ summary: 'Inscription agent de livraison (route dédiée)' })
   @ApiResponse({ status: 201 })
-  registerDeliveryAgent(@Body() dto: RegisterByRoleDto) {
+  registerDeliveryAgent(@Body() dto: RegisterDeliveryAgentDto) {
     return this.authService.registerDeliveryAgent(dto);
   }
 
   @Post('register/admin')
   @ApiOperation({ summary: 'Inscription admin (route dédiée)' })
   @ApiResponse({ status: 201 })
-  registerAdmin(@Body() dto: RegisterByRoleDto) {
+  registerAdmin(@Body() dto: RegisterAdminDto) {
     return this.authService.registerAdmin(dto);
   }
 

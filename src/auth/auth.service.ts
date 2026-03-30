@@ -79,20 +79,19 @@ export class AuthService {
 
       if (role === Role.ESTABLISHMENT) {
         const establishmentDto = dto as RegisterEstablishmentDto;
+        const establishmentData = establishmentDto.establishment;
         await tx.establishment.create({
           data: {
             ownerId: createdUser.id,
             name:
-              establishmentDto.establishmentName ??
+              establishmentData?.name ??
               `${createdUser.firstName} ${createdUser.lastName}`.trim(),
-            description: establishmentDto.establishmentDescription,
-            city: establishmentDto.establishmentCity ?? createdUser.city ?? 'A_COMPLETER',
-            address: establishmentDto.establishmentAddress ?? 'A compléter',
-            type:
-              (establishmentDto.establishmentType as EstablishmentType | undefined) ??
-              EstablishmentType.RESTAURANT,
-            coverImageUrl: establishmentDto.establishmentCoverImageUrl,
-            openingHours: establishmentDto.establishmentOpeningHours,
+            description: establishmentData?.description,
+            city: establishmentData?.city ?? createdUser.city ?? 'A_COMPLETER',
+            address: establishmentData?.address ?? 'A compléter',
+            type: establishmentData?.type ?? EstablishmentType.RESTAURANT,
+            coverImageUrl: establishmentData?.coverImageUrl,
+            openingHours: establishmentData?.openingHours,
           },
         });
       }

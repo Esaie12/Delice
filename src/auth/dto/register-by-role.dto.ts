@@ -1,33 +1,35 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { EstablishmentType } from '@prisma/client';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RegisterByRoleDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'user@delice.app', description: 'Email du compte utilisateur' })
   @IsEmail()
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'MotDePasse123!', description: 'Mot de passe (min. 8 caractères)' })
   @IsString()
   @MinLength(8)
   password: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'Moussa' })
   @IsString()
   firstName: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'Sow' })
   @IsString()
   lastName: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '+221770001122', nullable: true })
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({ example: 'Dakar', nullable: true })
+  @IsOptional()
+  @IsString()
+  city?: string;
 }
 
 export class RegisterClientDto extends RegisterByRoleDto {}
@@ -36,39 +38,51 @@ export class RegisterDeliveryAgentDto extends RegisterByRoleDto {}
 
 export class RegisterAdminDto extends RegisterByRoleDto {}
 
+export class RegisterEstablishmentDataDto {
+  @ApiPropertyOptional({ example: 'Le Jardin Gourmand', nullable: true })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'Cuisine sénégalaise et africaine', nullable: true })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 'Dakar', nullable: true })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional({ example: 'Point E, Rue 12', nullable: true })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ enum: EstablishmentType, nullable: true })
+  @IsOptional()
+  @IsEnum(EstablishmentType)
+  type?: EstablishmentType;
+
+  @ApiPropertyOptional({ example: 'https://cdn.delice.app/cover.jpg', nullable: true })
+  @IsOptional()
+  @IsString()
+  coverImageUrl?: string;
+
+  @ApiPropertyOptional({ example: '08:00-23:00', nullable: true })
+  @IsOptional()
+  @IsString()
+  openingHours?: string;
+}
+
 export class RegisterEstablishmentDto extends RegisterByRoleDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    type: RegisterEstablishmentDataDto,
+    nullable: true,
+    description: 'Attributs de l’entité Establishment',
+  })
   @IsOptional()
-  @IsString()
-  establishmentName?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  establishmentDescription?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  establishmentCity?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  establishmentAddress?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  establishmentType?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  establishmentCoverImageUrl?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  establishmentOpeningHours?: string;
+  @ValidateNested()
+  @Type(() => RegisterEstablishmentDataDto)
+  establishment?: RegisterEstablishmentDataDto;
 }

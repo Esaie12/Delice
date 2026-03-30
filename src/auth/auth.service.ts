@@ -1,9 +1,16 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { EstablishmentType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '../common/enums/role.enum';
 import { LoginDto } from './dto/login.dto';
+import {
+  RegisterAdminDto,
+  RegisterClientDto,
+  RegisterDeliveryAgentDto,
+  RegisterEstablishmentDto,
+} from './dto/register-by-role.dto';
 import { RegisterDto } from './dto/register.dto';
 
 type JwtPayload = {
@@ -25,19 +32,19 @@ export class AuthService {
     return this.registerWithRole(dto, dto.role ?? Role.CLIENT);
   }
 
-  async registerClient(dto: RegisterDto) {
+  async registerClient(dto: RegisterClientDto) {
     return this.registerWithRole(dto, Role.CLIENT);
   }
 
-  async registerEstablishment(dto: RegisterDto) {
+  async registerEstablishment(dto: RegisterEstablishmentDto) {
     return this.registerWithRole(dto, Role.ESTABLISHMENT);
   }
 
-  async registerDeliveryAgent(dto: RegisterDto) {
+  async registerDeliveryAgent(dto: RegisterDeliveryAgentDto) {
     return this.registerWithRole(dto, Role.DELIVERY_AGENT);
   }
 
-  async registerAdmin(dto: RegisterDto) {
+  async registerAdmin(dto: RegisterAdminDto) {
     return this.registerWithRole(dto, Role.ADMIN);
   }
 
@@ -52,6 +59,7 @@ export class AuthService {
           password: hashed,
           firstName: dto.firstName,
           lastName: dto.lastName,
+          phone: dto.phone,
           city: dto.city,
           role,
         },
@@ -70,13 +78,20 @@ export class AuthService {
       }
 
       if (role === Role.ESTABLISHMENT) {
+        const establishmentDto = dto as RegisterEstablishmentDto;
+        const establishmentData = establishmentDto.establishment;
         await tx.establishment.create({
           data: {
             ownerId: createdUser.id,
-            name: `${createdUser.firstName} ${createdUser.lastName}`.trim(),
-            city: createdUser.city ?? 'A_COMPLETER',
-            address: 'A compléter',
-            type: 'RESTAURANT',
+            name:
+              establishmentData?.name ??
+              `${createdUser.firstName} ${createdUser.lastName}`.trim(),
+            description: establishmentData?.description,
+            city: establishmentData?.city ?? createdUser.city ?? 'A_COMPLETER',
+            address: establishmentData?.address ?? 'A compléter',
+            type: establishmentData?.type ?? EstablishmentType.RESTAURANT,
+            coverImageUrl: establishmentData?.coverImageUrl,
+            openingHours: establishmentData?.openingHours,
           },
         });
       }

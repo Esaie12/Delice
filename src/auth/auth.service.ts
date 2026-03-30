@@ -22,14 +22,46 @@ export class AuthService {
 
   /** Register a new account and issue tokens. */
   async register(dto: RegisterDto) {
+    return this.registerWithRole(dto, dto.role ?? Role.CLIENT);
+  }
+
+  async registerClient(dto: RegisterDto) {
+    return this.registerWithRole(dto, Role.CLIENT);
+  }
+
+  async registerEstablishment(dto: RegisterDto) {
+    return this.registerWithRole(dto, Role.ESTABLISHMENT);
+  }
+
+  async registerDeliveryAgent(dto: RegisterDto) {
+    return this.registerWithRole(dto, Role.DELIVERY_AGENT);
+  }
+
+  async registerAdmin(dto: RegisterDto) {
+    return this.registerWithRole(dto, Role.ADMIN);
+  }
+
+  private async registerWithRole(dto: RegisterDto, role: Role) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new BadRequestException('Email already in use');
     const hashed = await bcrypt.hash(dto.password, 10);
-    const role = dto.role ?? Role.CLIENT;
     const user = await this.prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
-        data: { ...dto, password: hashed, role },
+        data: {
+          email: dto.email,
+          password: hashed,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          city: dto.city,
+          role,
+        },
       });
+
+      if (role === Role.CLIENT) {
+        await tx.client.create({
+          data: { userId: createdUser.id },
+        });
+      }
 
       if (role === Role.DELIVERY_AGENT) {
         await tx.deliveryAgent.create({

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '../common/enums/role.enum';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -24,9 +25,39 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) throw new BadRequestException('Email already in use');
     const hashed = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: { ...dto, password: hashed, role: dto.role ?? 'CLIENT' },
+    const role = dto.role ?? Role.CLIENT;
+    const user = await this.prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: { ...dto, password: hashed, role },
+      });
+
+      if (role === Role.DELIVERY_AGENT) {
+        await tx.deliveryAgent.create({
+          data: { userId: createdUser.id },
+        });
+      }
+
+      if (role === Role.ESTABLISHMENT) {
+        await tx.establishment.create({
+          data: {
+            ownerId: createdUser.id,
+            name: `${createdUser.firstName} ${createdUser.lastName}`.trim(),
+            city: createdUser.city ?? 'A_COMPLETER',
+            address: 'A compléter',
+            type: 'RESTAURANT',
+          },
+        });
+      }
+
+      if (role === Role.ADMIN) {
+        await tx.admin.create({
+          data: { userId: createdUser.id },
+        });
+      }
+
+      return createdUser;
     });
+
     return this.generateTokens(user.id, user.email, user.role);
   }
 

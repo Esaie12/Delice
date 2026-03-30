@@ -22,7 +22,7 @@ export class EstablishmentsService {
   /** Get establishments detail. */
   async findOne(id: string) {
     const entity = await this.prisma.establishment.findUnique({ where: { id } });
-    if (!entity) throw new NotFoundException('Establishments not found');
+    if (!entity) throw new NotFoundException('Establishment not found');
     return entity;
   }
 

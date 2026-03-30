@@ -1,0 +1,394 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ESTABLISHMENT
+  DELIVERY_AGENT
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  READY
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  WAITING
+  PICKED_UP
+  IN_PROGRESS
+  DELIVERED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  CARD
+  WALLET
+  CASH
+}
+
+enum EstablishmentType {
+  RESTAURANT
+  HOTEL
+  BAKERY
+  SUPERMARKET
+}
+
+enum LoyaltyTransactionType {
+  EARN
+  REDEEM
+}
+
+enum NotificationType {
+  ORDER_READY
+  DELIVERY_UPDATE
+  PROMOTION
+  SYSTEM
+  RESERVATION_CONFIRMED
+  RESERVATION_CANCELLED
+}
+
+model User {
+  id               String         @id @default(uuid())
+  email            String         @unique
+  password         String
+  firstName        String
+  lastName         String
+  phone            String?
+  city             String?
+  role             Role           @default(CLIENT)
+  isActive         Boolean        @default(true)
+  refreshTokenHash String?
+  establishments   Establishment[] @relation("OwnerEstablishments")
+  orders           Order[]
+  reservations     Reservation[]
+  reviews          Review[]
+  addresses        Address[]
+  loyaltyCard      LoyaltyCard?
+  notifications    Notification[]
+  deliveryAgent    DeliveryAgent?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([role])
+  @@index([city])
+}
+
+model Establishment {
+  id            String            @id @default(uuid())
+  ownerId       String
+  name          String
+  description   String?
+  city          String
+  address       String
+  type          EstablishmentType
+  coverImageUrl String?
+  openingHours  String?
+  isValidated   Boolean           @default(false)
+  ratingAvg     Float             @default(0)
+  ratingCount   Int               @default(0)
+  owner         User              @relation("OwnerEstablishments", fields: [ownerId], references: [id])
+  menus         Menu[]
+  orders        Order[]
+  reservations  Reservation[]
+  reviews       Review[]
+  deliveryZones DeliveryZone[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([ownerId])
+  @@index([city, type])
+}
+
+model Menu {
+  id              String          @id @default(uuid())
+  establishmentId String
+  name            String
+  description     String?
+  isActive        Boolean         @default(true)
+  establishment   Establishment   @relation(fields: [establishmentId], references: [id])
+  categories      Category[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([establishmentId])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  menuId     String
+  name      String
+  position  Int      @default(0)
+  menu      Menu     @relation(fields: [menuId], references: [id])
+  items     Item[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([menuId])
+}
+
+model Item {
+  id          String       @id @default(uuid())
+  categoryId   String
+  name        String
+  description String?
+  price       Float
+  currency    String       @default("XOF")
+  imageUrl    String?
+  allergens   String?
+  isAvailable Boolean      @default(true)
+  category    Category     @relation(fields: [categoryId], references: [id])
+  options     ItemOption[]
+  orderItems  OrderItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([categoryId])
+}
+
+model ItemOption {
+  id        String            @id @default(uuid())
+  itemId     String
+  name      String
+  price     Float             @default(0)
+  item      Item              @relation(fields: [itemId], references: [id])
+  orderItemOptions OrderItemOption[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([itemId])
+}
+
+model Order {
+  id               String       @id @default(uuid())
+  userId           String
+  establishmentId  String
+  deliveryAddressId String?
+  status           OrderStatus   @default(PENDING)
+  totalAmount      Float
+  notes            String?
+  user             User          @relation(fields: [userId], references: [id])
+  establishment    Establishment @relation(fields: [establishmentId], references: [id])
+  deliveryAddress  Address?      @relation(fields: [deliveryAddressId], references: [id])
+  items            OrderItem[]
+  payment          Payment?
+  delivery         Delivery?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@index([establishmentId, status])
+}
+
+model OrderItem {
+  id        String            @id @default(uuid())
+  orderId    String
+  itemId     String
+  quantity  Int
+  unitPrice Float
+  order     Order             @relation(fields: [orderId], references: [id])
+  item      Item              @relation(fields: [itemId], references: [id])
+  options   OrderItemOption[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([orderId])
+}
+
+model OrderItemOption {
+  id            String     @id @default(uuid())
+  orderItemId   String
+  itemOptionId  String
+  quantity      Int        @default(1)
+  unitPrice     Float
+  orderItem     OrderItem  @relation(fields: [orderItemId], references: [id])
+  itemOption    ItemOption @relation(fields: [itemOptionId], references: [id])
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([orderItemId])
+}
+
+model Reservation {
+  id              String   @id @default(uuid())
+  userId           String
+  establishmentId  String
+  dateTime        DateTime
+  guestsCount     Int
+  status          String   @default("PENDING")
+  notes           String?
+  user            User     @relation(fields: [userId], references: [id])
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([establishmentId, dateTime])
+}
+
+model Review {
+  id               String      @id @default(uuid())
+  userId            String
+  establishmentId   String?
+  deliveryAgentId   String?
+  rating           Int
+  comment          String?
+  user             User        @relation(fields: [userId], references: [id])
+  establishment    Establishment? @relation(fields: [establishmentId], references: [id])
+  deliveryAgent    DeliveryAgent? @relation(fields: [deliveryAgentId], references: [id])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([establishmentId])
+  @@index([deliveryAgentId])
+}
+
+model Delivery {
+  id              String         @id @default(uuid())
+  orderId          String         @unique
+  deliveryAgentId  String?
+  status          DeliveryStatus  @default(WAITING)
+  pickedUpAt      DateTime?
+  deliveredAt     DateTime?
+  failureReason   String?
+  order           Order           @relation(fields: [orderId], references: [id])
+  deliveryAgent   DeliveryAgent?  @relation(fields: [deliveryAgentId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([deliveryAgentId, status])
+}
+
+model DeliveryAgent {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  vehicleType     String?
+  licenseNumber   String?
+  isValidated     Boolean      @default(false)
+  isAvailable     Boolean      @default(false)
+  ratingAvg       Float        @default(0)
+  ratingCount     Int          @default(0)
+  user            User         @relation(fields: [userId], references: [id])
+  deliveries      Delivery[]
+  reviews         Review[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([isAvailable])
+}
+
+model Payment {
+  id           String        @id @default(uuid())
+  orderId       String        @unique
+  amount       Float
+  method       PaymentMethod
+  status       PaymentStatus  @default(PENDING)
+  externalRef  String?
+  paidAt       DateTime?
+  order        Order          @relation(fields: [orderId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([status, method])
+}
+
+model LoyaltyCard {
+  id            String               @id @default(uuid())
+  userId         String               @unique
+  pointsBalance Int                  @default(0)
+  tier          String               @default("BRONZE")
+  user          User                 @relation(fields: [userId], references: [id])
+  transactions  LoyaltyTransaction[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+model LoyaltyTransaction {
+  id            String                 @id @default(uuid())
+  loyaltyCardId  String
+  type          LoyaltyTransactionType
+  points        Int
+  description   String?
+  loyaltyCard   LoyaltyCard            @relation(fields: [loyaltyCardId], references: [id])
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([loyaltyCardId, type])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId       String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  user        User             @relation(fields: [userId], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId, isRead])
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId       String
+  label       String
+  addressLine String
+  city        String
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model DeliveryZone {
+  id               String         @id @default(uuid())
+  establishmentId  String?
+  name             String
+  city             String
+  polygonGeoJson   Json
+  deliveryFee      Float
+  isActive         Boolean        @default(true)
+  establishment    Establishment? @relation(fields: [establishmentId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([city, isActive])
+}
+
+model ReferralCode {
+  id            String   @id @default(uuid())
+  userId         String   @unique
+  code          String   @unique
+  referralCount Int      @default(0)
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

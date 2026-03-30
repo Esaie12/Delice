@@ -22,6 +22,8 @@ async function main() {
   await prisma.loyaltyTransaction.deleteMany();
   await prisma.loyaltyCard.deleteMany();
   await prisma.deliveryAgent.deleteMany();
+  await prisma.admin.deleteMany();
+  await prisma.client.deleteMany();
   await prisma.address.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.establishment.deleteMany();
@@ -34,11 +36,13 @@ async function main() {
   const livreurPwd = await bcrypt.hash('Livreur@1234', 10);
 
   const admin = await prisma.user.create({ data: { email: 'admin@delicedelice.com', password: adminPwd, firstName: 'Super', lastName: 'Admin', role: Role.ADMIN, city: 'Cotonou' } });
+  await prisma.admin.create({ data: { userId: admin.id } });
   const clients = await Promise.all([
     prisma.user.create({ data: { email: 'client1@test.com', password: clientPwd, firstName: 'Jean', lastName: 'Koffi', role: Role.CLIENT, city: 'Cotonou' } }),
     prisma.user.create({ data: { email: 'client2@test.com', password: clientPwd, firstName: 'Marie', lastName: 'Hounsou', role: Role.CLIENT, city: 'Porto-Novo' } }),
     prisma.user.create({ data: { email: 'client3@test.com', password: clientPwd, firstName: 'Paul', lastName: 'Agbossou', role: Role.CLIENT, city: 'Parakou' } }),
   ]);
+  await prisma.client.createMany({ data: clients.map((u) => ({ userId: u.id })) });
 
   const owners = await Promise.all([
     prisma.user.create({ data: { email: 'resto1@test.com', password: restoPwd, firstName: 'Resto', lastName: 'One', role: Role.ESTABLISHMENT, city: 'Cotonou' } }),

@@ -5,6 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
+type JwtPayload = {
+  sub: string;
+  id: string;
+  email: string;
+  role: string;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -48,20 +55,29 @@ export class AuthService {
     return this.prisma.user.findUnique({ where: { id: userId } });
   }
 
+  
   private async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, id: userId, email, role };
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
-    });
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
-    });
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshTokenHash: await bcrypt.hash(refreshToken, 10) },
-    });
-    return { accessToken, refreshToken };
-  }
+  const payload = {
+    sub: userId,
+    email,
+    role,
+  };
+
+  const accessToken = await this.jwtService.signAsync(payload as any, {
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN as any,
+  });
+
+  const refreshToken = await this.jwtService.signAsync(payload as any, {
+    secret: process.env.JWT_REFRESH_SECRET,
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN as any,
+  });
+
+  await this.prisma.user.update({
+    where: { id: userId },
+    data: { refreshTokenHash: await bcrypt.hash(refreshToken, 10) },
+  });
+
+  return { accessToken, refreshToken };
+}
 }

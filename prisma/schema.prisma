@@ -92,6 +92,8 @@ model User {
 
   @@index([role])
   @@index([city])
+
+   referralCodes  ReferralCode[]
 }
 
 model Establishment {

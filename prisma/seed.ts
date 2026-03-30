@@ -23,6 +23,7 @@ async function main() {
   await prisma.loyaltyCard.deleteMany();
   await prisma.deliveryAgent.deleteMany();
   await prisma.admin.deleteMany();
+  await prisma.client.deleteMany();
   await prisma.address.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.establishment.deleteMany();
@@ -41,6 +42,7 @@ async function main() {
     prisma.user.create({ data: { email: 'client2@test.com', password: clientPwd, firstName: 'Marie', lastName: 'Hounsou', role: Role.CLIENT, city: 'Porto-Novo' } }),
     prisma.user.create({ data: { email: 'client3@test.com', password: clientPwd, firstName: 'Paul', lastName: 'Agbossou', role: Role.CLIENT, city: 'Parakou' } }),
   ]);
+  await prisma.client.createMany({ data: clients.map((u) => ({ userId: u.id })) });
 
   const owners = await Promise.all([
     prisma.user.create({ data: { email: 'resto1@test.com', password: restoPwd, firstName: 'Resto', lastName: 'One', role: Role.ESTABLISHMENT, city: 'Cotonou' } }),

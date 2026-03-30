@@ -96,3 +96,32 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Seed de la base de données (Prisma)
+
+1. Copier le fichier d'exemple d'environnement :
+
+```bash
+cp .env.example .env
+```
+
+2. Installer les dépendances puis générer le client Prisma :
+
+```bash
+npm install
+npm run prisma:generate
+```
+
+3. Créer la base et appliquer la migration :
+
+```bash
+npx prisma migrate dev --name init
+```
+
+4. Lancer le seed :
+
+```bash
+npm run db:seed
+```
+
+Le seed crée 3 utilisateurs de démonstration (ADMIN, MANAGER, USER).
